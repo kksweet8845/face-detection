@@ -71,7 +71,7 @@ void detectAndDisplay( Mat frame )
  
       Mat faceROI = frame_gray( faces[i] );
       std::vector<Rect> eyes;
- 
+      imwrite(format("./faces/face_%02d.png", i), faceROI);
       //-- In each face, detect eyes
       eyes_cascade.detectMultiScale( faceROI, eyes, 1.1, 2, 0 |CASCADE_SCALE_IMAGE, Size(.5, .5) );
  

@@ -2,3 +2,10 @@
 fc
 *.xml
 *.jpg
+__MACOSX
+*.zip
+d*-*-*-t*-*-*
+en
+out
+csv.ext
+model

@@ -173,7 +173,7 @@ void detectFace(cv::Mat &frame)
     vector<Rect> faces;
     cv::Mat frame_gray;
     //Mat frame2 = frame.clone();
-    cv::cvtColor(frame, frame_gray, cv::COLOR_BGR2GRAY);
+    cv::cvtColor(frame, frame_gray, COLOR_BGR2GRAY);
     equalizeHist(frame_gray, frame_gray);
     //-- Detect faces
     face_cascade.detectMultiScale(frame_gray, faces, 1.1, 2, 0 | CV_HAAR_SCALE_IMAGE, Size(30, 30));

@@ -52,9 +52,17 @@ cv::CascadeClassifier face_cascade;
 cv::CascadeClassifier eyes_cascade;
 
 static char output_dir[200];
+static int subjectid;
 
 int main(int argc, const char *argv[])
 {
+
+    if(argc < 2){
+        printf("Usage ./fc <id>\n");
+        return 0;
+    } 
+
+    subjectid = atoi(argv[1]);
 
     fcntl(0, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK);
     // variable to store the frame get from video stream
@@ -94,7 +102,7 @@ int main(int argc, const char *argv[])
     printf("Current local time and date: %s\n", asctime(timeinfo));
 
    
-    sprintf(output_dir, "d%d_%d_%d_t%d_%d_%d", timeinfo->tm_mday, timeinfo->tm_mon+1, timeinfo->tm_year + 1900,
+    sprintf(output_dir, "d%d-%d-%d-t%d-%d-%d", timeinfo->tm_mday, timeinfo->tm_mon+1, timeinfo->tm_year + 1900,
                                                timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
     mkdir(output_dir, 0777);
     int fid=0;
@@ -163,6 +171,9 @@ struct framebuffer_info get_framebuffer_info(const char *framebuffer_device_path
 
 void detectFace(cv::Mat &frame, int frame_id)
 {
+    int height = 250;
+    int width = 250;
+    cv::Scalar value(255, 255, 255);
     vector<Rect> faces;
     cv::Mat frame_gray;
     //Mat frame2 = frame.clone();
@@ -174,11 +185,35 @@ void detectFace(cv::Mat &frame, int frame_id)
 
     for (int i = 0; i < faces.size(); i++)
     {
-        cv::Point center(faces[i].x + faces[i].width / 2, faces[i].y + faces[i].height / 2);
-        ellipse(frame, center, Size(faces[i].width, faces[i].height), 0, 0, 360, Scalar(255, 0, 255), 2, 8, 0);
-
+        // cv::Point center(faces[i].x + faces[i].width / 2, faces[i].y + faces[i].height / 2);
+        // ellipse(frame, center, Size(faces[i].width, faces[i].height), 0, 0, 360, Scalar(255, 0, 255), 2, 8, 0);
+        
+        rectangle(frame, faces[i], Scalar(255, 0, 255), 1, 8, 0);
+        // faces[i].x = (center.x - (width/2) >= 0) ? center.x - (width/2) : faces[i].x;
+        // faces[i].y = (center.y - (height/2) >= 0) ? center.y - (height/2) : faces[i].y;
+        // faces[i].width = width;
+        // faces[i].height = height;
         cv::Mat faceROI = frame_gray(faces[i]);
-        imwrite(format("./%s/frame_%02d_face_%02d.png", output_dir, frame_id, i), faceROI);
+        
+        cv::Size size = faceROI.size();
+        int xpadding = (width - min(width, size.width));
+        int left = (xpadding % 2 == 0) ? (xpadding >> 1) : (xpadding >> 1) + 1;
+        int right = xpadding >> 1;
+        int ypadding = (height - min(height, size.height));
+        int top = (ypadding % 2 == 0) ? (ypadding >> 1) : (ypadding >> 1) + 1;
+        int bottom = ypadding >> 1;
+        // printf("x: %d, y: %d\n", xpadding, ypadding);
+        copyMakeBorder(faceROI, faceROI, top, bottom, left, right, BORDER_CONSTANT, value);
+
+        if(faceROI.size().width != width) {
+            printf("Width (%d): %d - min(%d, %d), left: %d, right: %d\n", faceROI.size().width, width, width, size.width, left, right);
+        }
+        if(faceROI.size().height != height) {
+            printf("Height(%d): %d - min(%d, %d), top: %d, bottom: %d\n", faceROI.size().height, height, height, size.height, top, bottom);
+        }
+        // assert(faceROI.size().width == width);
+        // assert(faceROI.size().height == height);
+        imwrite(format("./%s/subject%d_%d.png", output_dir, subjectid, frame_id), faceROI);
         std::vector<Rect> eyes;
 
         //-- In each face, detect eyes
@@ -186,9 +221,12 @@ void detectFace(cv::Mat &frame, int frame_id)
 
         for (int j = 0; j < eyes.size(); j++)
         {
-            Point eye_center(faces[i].x + eyes[j].x + eyes[j].width / 2, faces[i].y + eyes[j].y + eyes[j].height / 2);
-            int radius = cvRound((eyes[j].width + eyes[j].height) * 0.25);
-            circle(frame, eye_center, radius, Scalar(255, 0, 0), 3, 8, 0);
+            // Point eye_center(faces[i].x + eyes[j].x + eyes[j].width / 2, faces[i].y + eyes[j].y + eyes[j].height / 2);
+            // int radius = cvRound((eyes[j].width + eyes[j].height) * 0.25);
+            // circle(frame, eye_center, radius, Scalar(255, 0, 0), 3, 8, 0);
+            eyes[j].x = faces[i].x + eyes[j].x;
+            eyes[j].y = faces[i].y + eyes[j].y;
+            rectangle(frame, eyes[j], Scalar(255, 0, 0), 3, 8, 0);
         }
     }
 }

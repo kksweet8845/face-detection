@@ -63,21 +63,26 @@ static void read_csv(const string& filename, vector<Mat>& images, vector<int>& l
         CV_Error(Error::StsBadArg, error_message);
     }
     string line, path, classlabel;
-    VideoCapture cap;
-    Mat frame;
+    // VideoCapture cap;
+    // Mat frame;
     while (getline(file, line)) {
         stringstream liness(line);
         getline(liness, path, separator);
         getline(liness, classlabel);
         // printf("path: %-50s, label: %s\n", path.c_str(), classlabel.c_str());
         if(!path.empty() && !classlabel.empty()) {
-            // images.push_back(imread(path, 0));
-            frame = cap.open(path);
-            cap.read(frame);
-            cap.release();
-            cvtColor(frame, frame, COLOR_RGB2GRAY);
-            images.push_back(frame.clone());
-            labels.push_back(atoi(classlabel.c_str()));
+            Mat frame = imread(path, 0);
+            if(frame.size().width == 250 && frame.size().height == 250) {
+                images.push_back(imread(path, 0));
+                labels.push_back(atoi(classlabel.c_str()));
+            } else{
+                cout << frame.size() << endl;
+            }
+            // frame = cap.open(path);
+            // cap.read(frame);
+            // cap.release();
+            // cvtColor(frame, frame, COLOR_RGB2GRAY);
+            // images.push_back(frame.clone());
         }
     }
 }

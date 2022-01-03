@@ -83,7 +83,7 @@ void detectAndDisplay( Mat frame )
        }
     }
    //-- Show what you got
-//    imshow( window_name, frame );
+   //    imshow( window_name, frame );
    imwrite( "result.jpg", frame );
 
 }

@@ -215,36 +215,20 @@ void detectFace(cv::Mat &frame, int frame_id)
         // ellipse(frame, center, Size(faces[i].width, faces[i].height), 0, 0, 360, Scalar(255, 0, 255), 2, 8, 0);
         
         rectangle(frame, faces[i], Scalar(255, 0, 255), 1, 8, 0);
-        // faces[i].x = (center.x - (width/2) >= 0) ? center.x - (width/2) : faces[i].x;
-        // faces[i].y = (center.y - (height/2) >= 0) ? center.y - (height/2) : faces[i].y;
-        // faces[i].width = width;
-        // faces[i].height = height;
         cv::Mat faceROI = frame_gray(faces[i]);
-        
-        cv::Size size = faceROI.size();
-        int xpadding = (width - min(width, size.width));
-        int left = (xpadding % 2 == 0) ? (xpadding >> 1) : (xpadding >> 1) + 1;
-        int right = xpadding >> 1;
-        int ypadding = (height - min(height, size.height));
-        int top = (ypadding % 2 == 0) ? (ypadding >> 1) : (ypadding >> 1) + 1;
-        int bottom = ypadding >> 1;
-        // printf("x: %d, y: %d\n", xpadding, ypadding);
-        copyMakeBorder(faceROI, faceROI, top, bottom, left, right, BORDER_CONSTANT, value);
-
-        if(faceROI.size().height != height || faceROI.size().width != width) {
-            printf("Width (%d): %d - min(%d, %d), left: %d, right: %d\n", faceROI.size().width, width, width, size.width, left, right);
-            printf("Height(%d): %d - min(%d, %d), top: %d, bottom: %d\n", faceROI.size().height, height, height, size.height, top, bottom);
-            continue;
-        }
+        cv::Mat res;
+        cv::resize(faceROI, res, Size(128, 128), 0, 0, INTER_LINEAR);
 
         int predictedLabel;
         double confidence;
-        model->predict(faceROI, predictedLabel, confidence);
+        model->predict(res, predictedLabel, confidence);
         Point origin;
         origin.x = center.x;
         origin.y = center.y + faces[i].height/2;
-        String text = format("%L %d, C %f", predictedLabel, confidence);
+        String text = format("%d", predictedLabel);
         putText(frame, text, origin, FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 255, 255), 2, 8, 0);
+
+        printf("Confidence: %f, Label: %d\n", confidence, predictedLabel);
 
         // imwrite(format("./%s/subject%d_%d.png", output_dir, subjectid, frame_id), faceROI);
         std::vector<Rect> eyes;

@@ -30,16 +30,39 @@ struct framebuffer_info
 
 struct framebuffer_info get_framebuffer_info(const char *framebuffer_device_path);
 void detectFace(cv::Mat &frame, int frame_id);
-bool fileExists(const std::string& path);
-int getch_echo(bool echo);
-
-Mat reconstructFace(const Mat face);
-double getSimilarity(const Mat A, const Mat B);
-
-int64_t timespecDiff(struct timespec* timeA_p, struct timespec* timeB_p);
+void detectFaces(Mat &frame, vector<Mat> &faces);
 
 
 
+bool fileExists(const std::string& path) {
+    bool ret = false;
+    if((access(path.c_str(), F_OK)) != -1) {
+        ret = true;
+    }
+    return ret;
+}
+
+
+
+
+int getch_echo(bool echo = true)
+{
+    struct termios oldt, newt;
+    int ch;
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~ICANON;
+    if (echo)
+        newt.c_lflag &= ECHO;
+    else
+        newt.c_lflag &= ~ECHO;
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    ch = getchar();
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    return ch;
+}
+
+// /usr/local/arm-opencv/install/share/OpenCV/haarcascades
 string face_cascade_name = "haarcascade_frontalface_alt.xml";
 string eyes_cascade_name = "haarcascade_eye_tree_eyeglasses.xml";
 cv::CascadeClassifier face_cascade;
@@ -48,12 +71,6 @@ cv::CascadeClassifier eyes_cascade;
 static char output_dir[200];
 static const char* model_path;
 Ptr<FisherFaceRecognizer> model;
-const float UNKNOWN_PERSON_THRESHOLD = 0.5f;
-static struct timespec start_time;
-static struct timespec end_time;
-int detectFlag = 0;
-
-
 
 int main(int argc, const char *argv[])
 {
@@ -115,8 +132,6 @@ int main(int argc, const char *argv[])
                                             //    timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
     // mkdir(output_dir, 0777);
     int fid=0;
-
-    detectFlag = 0;
     while (true)
     {
         camera >> frame;
@@ -137,14 +152,9 @@ int main(int argc, const char *argv[])
         //         perror("System call:");
         //     }
         // }
-        // if( waitKey(25) == 'c') {
-        //     detectFlag = 1;
-        // }
 
-        // if(detectFlag){
-        //     clock_gettime(CLOCK_MONOTONIC, &start_time);
-            
-        // }
+        cv::Size2f frame_size = frame.size();
+        // std::cout << frame_size << std::endl;
         detectFace(frame, fid);
         imshow("mointor", frame);
         if (waitKey(25) == 'q') {
@@ -209,31 +219,18 @@ void detectFace(cv::Mat &frame, int frame_id)
         cv::Mat res;
         cv::resize(faceROI, res, Size(128, 128), 0, 0, INTER_LINEAR);
 
-        Mat reconstructedFace = reconstructFace(res);
-
-        double similarity = getSimilarity(res, reconstructedFace);
-
+        int predictedLabel;
+        double confidence;
+        model->predict(res, predictedLabel, confidence);
         Point origin;
-        origin.x = center.x - faces[i].width/2;
-        origin.y = center.y + faces[i].height/2 + 10;
+        origin.x = center.x;
+        origin.y = center.y + faces[i].height/2;
+        String text = format("%d", predictedLabel);
+        putText(frame, text, origin, FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 255, 255), 2, 8, 0);
 
-        // printf("Similarity: %f/%f", similarity, UNKNOWN_PERSON_THRESHOLD);
-        if(similarity < UNKNOWN_PERSON_THRESHOLD) {
-            int predictedLabel;
-            double confidence;
-            model->predict(res, predictedLabel, confidence);
-            String text;
-            if(predictedLabel == 16) {
-                text = format("310552015");
-            } else {
-                text = format("310552051");
-            }
-            putText(frame, text, origin, FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 255, 255), 2, 8, 0);
-            // printf("Confidence: %f, Label: %d\n", confidence, predictedLabel);
-        } else {
-            putText(frame, format("Unknown"), origin, FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 255, 255), 2, 8, 0);
-        }
+        printf("Confidence: %f, Label: %d\n", confidence, predictedLabel);
 
+        // imwrite(format("./%s/subject%d_%d.png", output_dir, subjectid, frame_id), faceROI);
         std::vector<Rect> eyes;
 
         //-- In each face, detect eyes
@@ -249,102 +246,4 @@ void detectFace(cv::Mat &frame, int frame_id)
             rectangle(frame, eyes[j], Scalar(255, 0, 0), 3, 8, 0);
         }
     }
-}
-
-
-
-
-bool fileExists(const std::string& path) {
-    bool ret = false;
-    if((access(path.c_str(), F_OK)) != -1) {
-        ret = true;
-    }
-    return ret;
-}
-
-
-
-int getch_echo(bool echo = true)
-{
-    struct termios oldt, newt;
-    int ch;
-    tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt;
-    newt.c_lflag &= ~ICANON;
-    if (echo)
-        newt.c_lflag &= ECHO;
-    else
-        newt.c_lflag &= ~ECHO;
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-    ch = getchar();
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-    return ch;
-}
-
-
-Mat reconstructFace(const Mat face) {
-
-    // Since we can only reconstruct the face for some types of FaceRecognizer models (ie: Eigenfaces or Fisherfaces),
-    // we should surround the OpenCV calls by a try/catch block so we don't crash for other models.
-    try {
-        // Get some required data from the FaceRecognizer model.
-        // Mat eigenvectors = model->get<Mat>("eigenvectors");
-        Mat eigenvectors = model->getEigenVectors();
-        // Mat averageFaceRow = model->get<Mat>("mean");
-        Mat averageFaceRow = model->getMean();
-
-        int faceHeight = face.rows;
-
-        // Project the input image onto the PCA subspace.
-        Mat projection = LDA::subspaceProject(eigenvectors, averageFaceRow, face.reshape(1,1));
-        //printMatInfo(projection, "projection");
-
-        // Generate the reconstructed face back from the PCA subspace.
-        Mat reconstructionRow = LDA::subspaceReconstruct(eigenvectors, averageFaceRow, projection);
-        //printMatInfo(reconstructionRow, "reconstructionRow");
-
-        // Convert the float row matrix to a regular 8-bit image. Note that we
-        // shouldn't use "getImageFrom1DFloatMat()" because we don't want to normalize
-        // the data since it is already at the perfect scale.
-
-        // Make it a rectangular shaped image instead of a single row.
-        Mat reconstructionMat = reconstructionRow.reshape(1, faceHeight);
-        // Convert the floating-point pixels to regular 8-bit uchar pixels.
-        Mat reconstructedFace = Mat(reconstructionMat.size(), CV_8U);
-        reconstructionMat.convertTo(reconstructedFace, CV_8U, 1, 0);
-        //printMatInfo(reconstructedFace, "reconstructedFace");
-
-        return reconstructedFace;
-
-    } catch (cv::Exception e) {
-        //cout << "WARNING: Missing FaceRecognizer properties." << endl;
-        return Mat();
-    }
-
-
-
-}
-
-
-// Compare two images by getting the L2 error (square-root of sum of squared error).
-double getSimilarity(const Mat A, const Mat B)
-{
-    if (A.rows > 0 && A.rows == B.rows && A.cols > 0 && A.cols == B.cols) {
-        // Calculate the L2 relative error between the 2 images.
-        double errorL2 = norm(A, B, NORM_L2);
-        // Convert to a reasonable scale, since L2 error is summed across all pixels of the image.
-        double similarity = errorL2 / (double)(A.rows * A.cols);
-        return similarity;
-    }
-    else {
-        //cout << "WARNING: Images have a different size in 'getSimilarity()'." << endl;
-        return 100000000.0;  // Return a bad value
-    }
-}
-
-
-int64_t timespecDiff(struct timespec *timeA_p, struct timespec *timeB_p)
-{
-  return ((timeA_p->tv_sec * 1000000000) + timeA_p->tv_nsec) -
-           ((timeB_p->tv_sec * 1000000000) + timeB_p->tv_nsec);
 }

@@ -9,3 +9,6 @@ en
 out
 csv.ext
 model
+*.ext
+ffc
+perf

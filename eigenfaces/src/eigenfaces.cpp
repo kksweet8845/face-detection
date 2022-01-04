@@ -139,16 +139,11 @@ int main(int argc, const char *argv[]) {
     //      EigenFaceRecognizer::create(0, 123.0);
     //
     Ptr<EigenFaceRecognizer> model = EigenFaceRecognizer::create();
-    if (fileExists("./model/model.bin")){
-        printf("Loading existing model\n");
-        model->read("./model/model.bin");
-    } else {
-        model->train(images, labels);
-        printf("Training finished\n");
-        printf("Writing trained model");
-        // model->write("./model/model.bin");
-        model->save("./model/eigenfaces.yml");
-    }
+    model->train(images, labels);
+    printf("Training finished\n");
+    printf("Writing trained model");
+    // model->write("./model/model.bin");
+    model->save("./model/eigenfaces.yml");
      // The following line predicts the label of a given
     // test image:
     int predictedLabel = model->predict(testSample);

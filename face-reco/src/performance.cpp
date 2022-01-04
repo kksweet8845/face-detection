@@ -137,17 +137,16 @@ int main(int argc, const char *argv[])
         //         perror("System call:");
         //     }
         // }
-        // if( waitKey(25) == 'c') {
-        //     detectFlag = 1;
-        // }
+        if( waitKey(25) == 'c') {
+            detectFlag = 1;
+        }
 
-        // if(detectFlag){
-        //     clock_gettime(CLOCK_MONOTONIC, &start_time);
-            
-        // }
-        detectFace(frame, fid);
+        if(detectFlag){
+            clock_gettime(CLOCK_MONOTONIC, &start_time);
+            detectFace(frame, fid);
+        }
         imshow("mointor", frame);
-        if (waitKey(25) == 'q') {
+        if (detectFlag && waitKey() == 'q') {
             break;
         }
         fid++;
@@ -215,20 +214,27 @@ void detectFace(cv::Mat &frame, int frame_id)
 
         Point origin;
         origin.x = center.x - faces[i].width/2;
-        origin.y = center.y + faces[i].height/2 + 10;
+        origin.y = center.y + faces[i].height/2+10;
 
         // printf("Similarity: %f/%f", similarity, UNKNOWN_PERSON_THRESHOLD);
         if(similarity < UNKNOWN_PERSON_THRESHOLD) {
             int predictedLabel;
             double confidence;
             model->predict(res, predictedLabel, confidence);
+            clock_gettime(CLOCK_MONOTONIC, &end_time);
+            float timeElapsed = (float)timespecDiff(&end_time, &start_time) / 1000000.0f;
             String text;
             if(predictedLabel == 16) {
                 text = format("310552015");
+                putText(frame, text, origin, FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 255, 255), 2, 8, 0);
+                origin.y = origin.y + 35;
+                putText(frame, format("%.2fms", timeElapsed), origin, FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 255, 255), 2, 8, 0);
             } else {
                 text = format("310552051");
+                putText(frame, text, origin, FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 255, 255), 2, 8, 0);
+                origin.y = origin.y + 35;
+                putText(frame, format("%.2fms", timeElapsed), origin, FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 255, 255), 2, 8, 0);
             }
-            putText(frame, text, origin, FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 255, 255), 2, 8, 0);
             // printf("Confidence: %f, Label: %d\n", confidence, predictedLabel);
         } else {
             putText(frame, format("Unknown"), origin, FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 255, 255), 2, 8, 0);

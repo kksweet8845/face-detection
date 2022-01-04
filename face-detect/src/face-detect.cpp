@@ -171,8 +171,8 @@ struct framebuffer_info get_framebuffer_info(const char *framebuffer_device_path
 
 void detectFace(cv::Mat &frame, int frame_id)
 {
-    int height = 250;
-    int width = 250;
+    // int height = 250;
+    // int width = 250;
     cv::Scalar value(255, 255, 255);
     vector<Rect> faces;
     cv::Mat frame_gray;
@@ -195,25 +195,28 @@ void detectFace(cv::Mat &frame, int frame_id)
         // faces[i].height = height;
         cv::Mat faceROI = frame_gray(faces[i]);
         
-        cv::Size size = faceROI.size();
-        int xpadding = (width - min(width, size.width));
-        int left = (xpadding % 2 == 0) ? (xpadding >> 1) : (xpadding >> 1) + 1;
-        int right = xpadding >> 1;
-        int ypadding = (height - min(height, size.height));
-        int top = (ypadding % 2 == 0) ? (ypadding >> 1) : (ypadding >> 1) + 1;
-        int bottom = ypadding >> 1;
-        // printf("x: %d, y: %d\n", xpadding, ypadding);
-        copyMakeBorder(faceROI, faceROI, top, bottom, left, right, BORDER_CONSTANT, value);
+        cv::Mat res;
+        cv::resize(faceROI, res, Size(128, 128), 0, 0, INTER_LINEAR);
 
-        if(faceROI.size().width != width) {
-            printf("Width (%d): %d - min(%d, %d), left: %d, right: %d\n", faceROI.size().width, width, width, size.width, left, right);
-        }
-        if(faceROI.size().height != height) {
-            printf("Height(%d): %d - min(%d, %d), top: %d, bottom: %d\n", faceROI.size().height, height, height, size.height, top, bottom);
-        }
+        // cv::Size size = faceROI.size();
+        // int xpadding = (width - min(width, size.width));
+        // int left = (xpadding % 2 == 0) ? (xpadding >> 1) : (xpadding >> 1) + 1;
+        // int right = xpadding >> 1;
+        // int ypadding = (height - min(height, size.height));
+        // int top = (ypadding % 2 == 0) ? (ypadding >> 1) : (ypadding >> 1) + 1;
+        // int bottom = ypadding >> 1;
+        // printf("x: %d, y: %d\n", xpadding, ypadding);
+        // copyMakeBorder(faceROI, faceROI, top, bottom, left, right, BORDER_CONSTANT, value);
+
+        // if(faceROI.size().width != width) {
+        //     printf("Width (%d): %d - min(%d, %d), left: %d, right: %d\n", faceROI.size().width, width, width, size.width, left, right);
+        // }
+        // if(faceROI.size().height != height) {
+        //     printf("Height(%d): %d - min(%d, %d), top: %d, bottom: %d\n", faceROI.size().height, height, height, size.height, top, bottom);
+        // }
         // assert(faceROI.size().width == width);
         // assert(faceROI.size().height == height);
-        imwrite(format("./%s/subject%d_%d.png", output_dir, subjectid, frame_id), faceROI);
+        imwrite(format("./%s/subject%d_%d.png", output_dir, subjectid, frame_id), res);
         std::vector<Rect> eyes;
 
         //-- In each face, detect eyes

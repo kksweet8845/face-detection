@@ -71,18 +71,8 @@ static void read_csv(const string& filename, vector<Mat>& images, vector<int>& l
         getline(liness, classlabel);
         // printf("path: %-50s, label: %s\n", path.c_str(), classlabel.c_str());
         if(!path.empty() && !classlabel.empty()) {
-            Mat frame = imread(path, 0);
-            if(frame.size().width == 250 && frame.size().height == 250) {
-                images.push_back(imread(path, 0));
-                labels.push_back(atoi(classlabel.c_str()));
-            } else{
-                cout << frame.size() << endl;
-            }
-            // frame = cap.open(path);
-            // cap.read(frame);
-            // cap.release();
-            // cvtColor(frame, frame, COLOR_RGB2GRAY);
-            // images.push_back(frame.clone());
+            images.push_back(imread(path, 0));
+            labels.push_back(atoi(classlabel.c_str()));
         }
     }
 }
@@ -156,7 +146,8 @@ int main(int argc, const char *argv[]) {
         model->train(images, labels);
         printf("Training finished\n");
         printf("Writing trained model");
-        model->write("./model/model.bin");
+        // model->write("./model/model.bin");
+        model->save("./model/eigenfaces.yml");
     }
      // The following line predicts the label of a given
     // test image:

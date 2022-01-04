@@ -122,7 +122,6 @@ int main(int argc, const char *argv[])
             // cur_loc = (yoff + y) * pixel_size * frame_size.width + xoff * pixel_size;
             cur_loc = y * pixel_size * x_width;
             ofs.seekp(cur_loc);
-
             // uchar *row = frame.ptr<uchar>(y);
             // for (int x = 0; x < physical_windows_width; x++)
             // {
@@ -182,8 +181,8 @@ void detectFace(cv::Mat &frame)
     for (int i = 0; i < faces.size(); i++)
     {
         cv::Point center(faces[i].x + faces[i].width / 2, faces[i].y + faces[i].height / 2);
-        ellipse(frame, center, Size(faces[i].width, faces[i].height), 0, 0, 360, Scalar(255, 0, 255), 2, 8, 0);
-
+        //ellipse(frame, center, Size(faces[i].width, faces[i].height), 0, 0, 360, Scalar(255, 0, 255), 2, 8, 0);
+        rectangle(frame, faces[i], Scalar(255, 0, 255), 1, 8, 0);
         cv::Mat faceROI = frame_gray(faces[i]);
         std::vector<Rect> eyes;
 
@@ -192,9 +191,10 @@ void detectFace(cv::Mat &frame)
 
         for (int j = 0; j < eyes.size(); j++)
         {
-            Point eye_center(faces[i].x + eyes[j].x + eyes[j].width / 2, faces[i].y + eyes[j].y + eyes[j].height / 2);
-            int radius = cvRound((eyes[j].width + eyes[j].height) * 0.25);
-            circle(frame, eye_center, radius, Scalar(255, 0, 0), 3, 8, 0);
+            //Point eye_center(faces[i].x + eyes[j].x + eyes[j].width / 2, faces[i].y + eyes[j].y + eyes[j].height / 2);
+            //int radius = cvRound((eyes[j].width + eyes[j].height) * 0.25);
+            //circle(frame, eye_center, radius, Scalar(255, 0, 0), 3, 8, 0);
+            rectangle(frame, eyes[i], Scalar(255, 0, 255), 1, 8, 0);
         }
     }
 }

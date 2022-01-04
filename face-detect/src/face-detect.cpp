@@ -57,10 +57,11 @@ static int subjectid;
 int main(int argc, const char *argv[])
 {
 
-    if(argc < 2){
+    if (argc < 2)
+    {
         printf("Usage ./fc <id>\n");
         return 0;
-    } 
+    }
 
     subjectid = atoi(argv[1]);
 
@@ -75,14 +76,14 @@ int main(int argc, const char *argv[])
         return -1;
     };
 
-    if(!eyes_cascade.load(eyes_cascade_name)) {
+    if (!eyes_cascade.load(eyes_cascade_name))
+    {
         printf("loading eyes error\n");
         return -1;
     }
-    
-    // open video stream device
-    cv::VideoCapture camera(0);
 
+    // open video stream device
+    cv::VideoCapture camera(2);
 
     if (!camera.isOpened())
     {
@@ -95,17 +96,16 @@ int main(int argc, const char *argv[])
     // camera.set(cv::CAP_PROP_FRAME_HEIGHT, y_height);
 
     time_t rawtime;
-    struct tm* timeinfo;
+    struct tm *timeinfo;
 
     time(&rawtime);
     timeinfo = localtime(&rawtime);
     printf("Current local time and date: %s\n", asctime(timeinfo));
 
-   
-    sprintf(output_dir, "d%d-%d-%d-t%d-%d-%d", timeinfo->tm_mday, timeinfo->tm_mon+1, timeinfo->tm_year + 1900,
-                                               timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+    sprintf(output_dir, "d%d_%d_%d_t%d_%d_%d", timeinfo->tm_mday, timeinfo->tm_mon + 1, timeinfo->tm_year + 1900,
+            timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
     mkdir(output_dir, 0777);
-    int fid=0;
+    int fid = 0;
     while (true)
     {
         camera >> frame;
@@ -131,7 +131,8 @@ int main(int argc, const char *argv[])
         // std::cout << frame_size << std::endl;
         detectFace(frame, fid);
         imshow("mointor", frame);
-        if (waitKey(25) == 'q') {
+        if (waitKey(25) == 'q')
+        {
             break;
         }
         fid++;
@@ -187,14 +188,14 @@ void detectFace(cv::Mat &frame, int frame_id)
     {
         // cv::Point center(faces[i].x + faces[i].width / 2, faces[i].y + faces[i].height / 2);
         // ellipse(frame, center, Size(faces[i].width, faces[i].height), 0, 0, 360, Scalar(255, 0, 255), 2, 8, 0);
-        
+
         rectangle(frame, faces[i], Scalar(255, 0, 255), 1, 8, 0);
         // faces[i].x = (center.x - (width/2) >= 0) ? center.x - (width/2) : faces[i].x;
         // faces[i].y = (center.y - (height/2) >= 0) ? center.y - (height/2) : faces[i].y;
         // faces[i].width = width;
         // faces[i].height = height;
         cv::Mat faceROI = frame_gray(faces[i]);
-        
+
         cv::Mat res;
         cv::resize(faceROI, res, Size(128, 128), 0, 0, INTER_LINEAR);
 

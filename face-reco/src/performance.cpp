@@ -85,8 +85,6 @@ int main(int argc, const char *argv[])
         return -1;
     }
 
-    int cur_loc = 0;
-
     cv::VideoCapture camera(2);
 
     framebuffer_info fb_info = get_framebuffer_info("/dev/fb0");
@@ -115,20 +113,41 @@ int main(int argc, const char *argv[])
     camera.set(cv::CAP_PROP_FRAME_HEIGHT, y_height);
     int pixel_size = fb_info.bits_per_pixel >> 3;
     int fid = 0;
-
+    char c;
+    int cur_loc = 0;
+    detectFlag = 0;
     while (true)
     {
         camera >> frame;
         cv::Size2f frame_size = frame.size();
-        detectFace(frame, fid);
+        c = getch_echo(true); // detect keyboard input and output to c
+
+        if (c == 'c') // if input is 'c'
+        {
+            detectFlag = 1;
+        }
+
+        if (detectFlag) // start to count time and detect face
+        {
+            clock_gettime(CLOCK_MONOTONIC, &start_time);
+            detectFace(frame, fid);
+        }
+
         cv::cvtColor(frame, frame, cv::COLOR_BGR2BGR565);
-        for (int y = 0; y < frame_size.height; y++)
+        for (int y = 0; y < frame_size.height; y++) //output the frame to framebuffer
         {
             cur_loc = y * pixel_size * x_width;
             ofs.seekp(cur_loc);
+
             ofs.write(frame.ptr<char>(y), x_width * pixel_size);
         }
 
+        if (detectFlag) // if input is 'c' then pause the program
+        {
+            while (true)
+            {
+            }
+        }
         fid++;
     }
 
@@ -169,6 +188,7 @@ void detectFace(cv::Mat &frame, int frame_id)
 
     cv::cvtColor(frame, frame_gray, COLOR_BGR2GRAY);
     equalizeHist(frame_gray, frame_gray);
+
     //-- Detect faces
     face_cascade.detectMultiScale(frame_gray, faces, 1.1, 2, 0 | CASCADE_SCALE_IMAGE, Size(30, 30));
 
@@ -194,18 +214,25 @@ void detectFace(cv::Mat &frame, int frame_id)
             int predictedLabel;
             double confidence;
             model->predict(res, predictedLabel, confidence);
+            clock_gettime(CLOCK_MONOTONIC, &end_time);
+            double timeElapsed = (double)abs(timespecDiff(&end_time, &start_time)) / 1000000.0;
+            //printf("end_time sec : %ld end_time nsec : %ld\n", end_time.tv_sec, end_time.tv_nsec);
+            //printf("start_time sec : %ld start_time nsec : %ld\n", start_time.tv_sec, start_time.tv_nsec);
             String text;
             if (predictedLabel == 16)
             {
                 text = format("310552015");
                 putText(frame, text, origin, FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 255, 255), 2, 8, 0);
+                origin.y = origin.y + 35;
+                putText(frame, format("%.2lfms", timeElapsed), origin, FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 255, 255), 2, 8, 0);
             }
             else
             {
                 text = format("310552051");
                 putText(frame, text, origin, FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 255, 255), 2, 8, 0);
+                origin.y = origin.y + 35;
+                putText(frame, format("%.2lfms", timeElapsed), origin, FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0, 255, 255), 2, 8, 0);
             }
-            // printf("Confidence: %f, Label: %d\n", confidence, predictedLabel);
         }
         else
         {
@@ -316,6 +343,7 @@ double getSimilarity(const Mat A, const Mat B)
 
 int64_t timespecDiff(struct timespec *timeA_p, struct timespec *timeB_p)
 {
-    return ((timeA_p->tv_sec * 1000000000) + timeA_p->tv_nsec) -
-           ((timeB_p->tv_sec * 1000000000) + timeB_p->tv_nsec);
+    // return ((timeA_p->tv_sec * 1000000000) + timeA_p->tv_nsec) -
+    //        ((timeB_p->tv_sec * 1000000000) + timeB_p->tv_nsec);
+    return (timeA_p->tv_sec - timeB_p->tv_sec) * 1000000000 + timeA_p->tv_nsec - timeB_p->tv_nsec;
 }

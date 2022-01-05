@@ -65,6 +65,8 @@ static void read_csv(const string& filename, vector<Mat>& images, vector<int>& l
         }
     }
 }
+
+
 int main(int argc, const char *argv[]) {
     // Check for valid command line arguments, print usage
     // if no arguments were given.
@@ -126,8 +128,9 @@ int main(int argc, const char *argv[]) {
     //
     //      FisherFaceRecognizer::create(0, 123.0);
     //
-    Ptr<FisherFaceRecognizer> model = FisherFaceRecognizer::create(0);
+    Ptr<FisherFaceRecognizer> model = FisherFaceRecognizer::create();
     model->train(images, labels);
+    model->save("./model/fishfaces.yml");
     // The following line predicts the label of a given
     // test image:
     int predictedLabel = model->predict(testSample);
